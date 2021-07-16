@@ -1,195 +1,211 @@
-var filter = d3.select("#selDataset"); 
+function buildPlots() {
+  // Read in json file
+  d3.json("samples.json").then(bellydata => {
+      console.log(bellydata)
+      
+      var otuIds = bellydata.samples[0].otu_ids;
+      console.log(otuIds)
+      
+      var sampleValues = bellydata.samples[0].sample_values.slice(0,10).reverse();
+      console.log(sampleValues)
+      
+      var otuLabels = bellydata.samples[0].otu_labels.slice(0,10).reverse();
+      console.log(`OTU labels: ${otuLabels}`)
+      
+      var topOtuIds = bellydata.samples[0].otu_ids.slice(0,10).reverse();
+  
+      var otuIdLabels = topOtuIds.map(d => "OTU " + d);
+      console.log(`OTU ids: ${otuIdLabels}`)
+  
+      // Bar chart
+      var trace1 = {
+          x: sampleValues,
+          y: otuIdLabels,
+          text: otuLabels,
+          marker: {
+              color: "purple"
+          },
+          type: "bar",
+          orientation: "h"
+      };
+      
+      var data = [trace1];
+      var layout = {
+          title: "Top 10 OTUs",
+          margin: {
+              l: 100,
+              r: 100,
+              t: 100,
+              b: 100
+          }
+      };
 
-// gives a starting reference for display on load
-var samp = "940"
+      // Create bar plot
+      Plotly.react("bar", data, layout);
 
-// handles changes
-function optionChanged(sample) {
-    samp = sample;
+      // Bubble plot
+      var trace2 = {
+          x: bellydata.samples[0].otu_ids,
+          y: bellydata.samples[0].sample_values,
+          mode: "markers",
+          marker:{
+              size: bellydata.samples[0].sample_values,
+              color: bellydata.samples[0].otu_ids
+          },
+          text: bellydata.samples[0].otu_labels
+      };
 
-    console.log(samp);
+      
+      var data1 = [trace2];
+      var layout1 = {
+          title: "Patient OTU Counts",
+          xaxis: {title: "OTU ID"},
+          height: 600,
+          width: 1200
+      };
 
-    renderProccess();
+      // Create bubble plot
+      Plotly.react("bubble", data1, layout1);
 
-};
+      // Dropdown
+      dropdown = document.getElementById('selDataset');
+      defaultOption = document.createElement('option')
+      options = bellydata.names
+  
+      for (i=0; i < options.length; i++){
+          option = document.createElement('option');
+          option.text = options[i];
+          option.value = options[i];
+          dropdown.add(option);
+      };
+      
+      var metadata = bellydata.metadata;
+      console.log(metadata)
+      
+      var id = 940;
+      
+      var result = metadata.filter(meta => meta.id === id)[0];
+      console.log(result)
+      
+      var demographicInfo = d3.select("#sample-metadata");
+      
+      demographicInfo.html("");
+      
+      Object.entries(result).forEach((key) => {
+          demographicInfo.append("h5").text(key[0].toUpperCase() + ": " + key[1] + "\n");
+          });
+      });
+  };  
 
-// displays on load
-renderProccess();
+// Function for change
+d3.selectAll("#selDataset").on("change", getData);
 
+function getData() {
 
-function renderProccess(){ 
+  dropDown = d3.select("#selDataset");
+  idInfo = dropDown.property("value");
+  console.log(idInfo)
+  d3.json("samples.json").then(bellydata => {
+      idNo = bellydata.names
+      for (i = 0; i < idNo.length; i++) {
+          if (idInfo == idNo[i]) {
+      
+              // Bar Plot
+              console.log("success")
+              var otuIds = bellydata.samples[i].otu_ids;
+              var sampleValues = bellydata.samples[i].sample_values.slice(0,10).reverse();
+              var otuLabels = bellydata.samples[i].otu_labels.slice(0,10).reverse();
+              var topOtuIds = bellydata.samples[i].otu_ids.slice(0,10).reverse();
+              var otuIdLabels = topOtuIds.map(d => "OTU " + d);
 
-    // do I need a delete existing graph line here????
+              var trace1 = {
+                  x: sampleValues,
+                  y: otuIdLabels,
+                  text: otuLabels,
+                  marker: {
+                      color: "purple"
+                  },
+                  type: "bar",
+                  orientation: "h"
+              };
 
-    d3.html('');
+              var data1 = [trace1];
+              var layout = {
+                  title: "Top 10 OTUs",
+                  margin: {
+                      l: 100,
+                      r: 100,
+                      t: 100,
+                      b: 100
+                  }
+              };
 
-    d3.json("samples.json").then((data) => {
-        // Create a variable that holds the samples array. 
-        var samples = data.samples;
-        
-        // Create a variable that holds the metadata array. 
+              // Bubble Chart
+              var trace2 = {
+                  x: bellydata.samples[i].otu_ids,
+                  y: bellydata.samples[i].sample_values,
+                  mode: "markers",
+                  marker:{
+                      size: bellydata.samples[i].sample_values,
+                      color: bellydata.samples[i].otu_ids
+                  },
+                  text: bellydata.samples[i].otu_labels
+              };
 
-        var metadata = data.metadata;
+              var data2 = [trace2];
+              var layout1 = {
+                  title: "Patient OTU Counts",
+                  xaxis: {title: "OTU ID"},
+                  height: 600,
+                  width: 1200
+              };
 
+              //Demographic Info
+              var metadata = bellydata.metadata;
 
-        // grabs data for drop down
-        var valdrop = samples.map(item => item.id)
-        .filter((value, index, self) => self.indexOf(value) === index);
-    
-    
-        // creates drop down
-        valdrop.forEach(function (values) {
-            filter.append('option').text(values);
-        });
+              console.log(metadata)
+              var result = metadata.filter(meta => meta.id === +idInfo)[0];
+      
+              var demographicInfo = d3.select("#sample-metadata");
 
-        // grabs the samples based on input
-        var resultArray = samples.filter(sampleObj => sampleObj.id == samp);
+              demographicInfo.html("");
+              console.log(result)
+              Object.entries(result).forEach((key) => {
+                  demographicInfo.append("h5").text(key[0].toUpperCase() + ": " + key[1] + "\n");
+              });
+      updatePlotly(data1, data2, result)
+          }
+      }
+  });
+}
 
-        console.log(resultArray);
+function updatePlotly(newdata1, newdata2, result) {
+  var layout1 = {
+      title: 'Top 10 OTUs',
+      xaxis: {
+          title: {
+            text: 'OTU IDs'}}
+      };
+  
+  var layout2 = {
+      height: 600,
+      width: 1200,
+      title: 'Patient OTU Counts',
+      xaxis: {
+          title: {
+            text: 'OTU IDs'}}
+      };
+  Plotly.react('bar',newdata1, layout1);
+  Plotly.react('bubble', newdata2, layout2);
 
-        // adds the first sample to a variable
-        var result = resultArray[0];
+  box = d3.selectAll('#sample-metadata');
+  box.html('');
+  
+  Object.entries(result).forEach(([key,value]) => {
+      console.log(`${key}: ${value}`);
+      box.append('ul').text(`${key}: ${value}`);
+  });
+}
 
-        // gathers variables that hold the chart value parts
-        var otu_ids = result.otu_ids;
-        var sample_values = result.sample_values;
-        var otu_labels = result.otu_labels;
-
-        // reformats the x, y ticks and labels for the bar chart in decending order and adds the OTU to the y ticks
-
-        var yticks = otu_ids.slice(0, 10).map(otuID => `OTU ${otuID}`).reverse();
-        var xticks = sample_values.slice(0, 10).reverse();
-        var labels = otu_labels.slice(0, 10).reverse();
-
-        console.log(yticks);
-        console.log(xticks);
-        console.log(labels);
-
-        var trace1 = {
-            x: xticks,
-            y: yticks,
-            text: labels,
-            orientation: 'h',
-            type: 'bar'
-        };
-
-        var data = [trace1] 
-
-        var layout = {
-            title: 'top 10 OTUs Found'
-        };
-        
-        Plotly.newPlot('bar', data, layout);
-
-
-        // bubble chart generation
-
-        // grabs data
-        var xticksbub = otu_ids.slice(0, 10);
-        xticksbub.push.apply(xticksbub, otu_ids.slice(Math.max(otu_ids.length - 10, 1)));
-
-        var yticksbub = sample_values.slice(0, 10);
-        yticksbub.push.apply(yticksbub, sample_values.slice(Math.max(sample_values.length - 10, 1)));
-
-        var labelsbub = otu_labels.slice(0, 10);
-        labelsbub.push.apply(labelsbub, otu_labels.slice(Math.max(otu_labels.length - 10, 1)));
-
-
-        console.log(xticksbub);
-        console.log(labelsbub);
-        console.log(yticksbub);
-
-        // plots data
-        var trace1 = {
-            x: xticksbub,
-            y: yticksbub,
-            mode: 'markers',
-            marker: {
-              color: xticksbub,  
-              size: yticksbub,
-              colorscale: "Earth"
-            },
-            text: labelsbub
-          };
-          
-          var data = [trace1];
-          
-          var layout = {
-            title: 'First Ten and Last Ten Samples',
-            xaxis: {
-                title: "OTU ID"
-            },
-            showlegend: false,
-            height: 600,
-            width: 1200
-          };
-          
-          Plotly.newPlot('bubble', data, layout);
-
-        //   demographic chart
-
-        // grabs the metadata based on input
-        var resultArray2 = metadata.filter(metaObj => metaObj.id == samp);
-
-        console.log(resultArray2);
-
-        var result2 = resultArray2[0];
-
-        // parses out all demografic variables
-
-        var age = result2.age;
-        var bbtype = result2.bbtype;
-        var ethnicity = result2.ethnicity;
-        var gender = result2.gender;
-        var id = result2.id;
-        var location = result2.location;
-        var wfreq = result2.wfreq;
-
-        // creates the readable formating
-        var demoinfo = ` id: ${id} <br> ethnicity: ${ethnicity} <br> gender: ${gender} <br> age: ${age} <br> location: ${location} <br> bbtype: ${bbtype} <br> wfreq: ${wfreq}`
-
-        document.getElementById('sample-metadata').innerHTML = demoinfo;
-
-
-        // BONUS Wash frequency 
-
-        var data = [
-            {
-            //   domain: { x: [0, 1], y: [0, 1] },
-            
-              title: { text: "Belly Button Washing Frequency <br> Scrubs per Week" },
-              type: "indicator",
-              mode: "gauge+number",
-              value: wfreq,
-              
-            //   delta: { reference: 380 },
-              gauge: {
-                axis: { range: [null, 9], ticks: 9},
-                steps: [
-                  { range: [0, 1], color: "lightgray" },
-                  { range: [1, 2], color: "gray" },
-                  { range: [2, 3], color: "lightgray" },
-                  { range: [3, 4], color: "gray" },
-                  { range: [4, 5], color: "lightgray" },
-                  { range: [5, 6], color: "gray" },
-                  { range: [6, 7], color: "lightgray" },
-                  { range: [7, 8], color: "gray" },
-                  { range: [8, 9], color: "lightgray" }
-                ],
-                threshold: {
-                  line: { color: "red", width: 3 },
-                  thickness: 0.75,
-                  value: wfreq
-
-                }
-              }
-            }
-          ];
-          
-          var layout = { width: 600, height: 450, margin: { t: 0, b: 0 } };
-          Plotly.newPlot('gauge', data, layout);
-        
-
-    });
-
-};
+getData();
+buildPlots();
